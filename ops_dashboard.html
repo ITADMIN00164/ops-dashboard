@@ -205,7 +205,7 @@
 
                 const response = await fetch(CONFIG.APPS_SCRIPT_URL, {
                     method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
+                    headers: { 'Content-Type': 'text/plain' },
                     body: JSON.stringify({
                         fileId: CONFIG.FILE_ID,
                         sheets: ['Ops Weekly', 'CAT-MH', 'CAT-CG']
