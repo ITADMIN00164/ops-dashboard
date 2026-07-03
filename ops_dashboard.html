@@ -54,21 +54,6 @@
             color: #333;
         }
 
-        .google-signin-button {
-            padding: 10px 20px;
-            background: #4285F4;
-            color: white;
-            border: none;
-            border-radius: 4px;
-            cursor: pointer;
-            font-size: 14px;
-            transition: background 0.3s;
-        }
-
-        .google-signin-button:hover {
-            background: #1f71e7;
-        }
-
         .logout-btn {
             padding: 8px 16px;
             background: #ea4335;
@@ -394,10 +379,6 @@
             text-align: right;
         }
 
-        #g_id_onload {
-            display: none;
-        }
-
         .auth-container {
             display: flex;
             align-items: center;
@@ -427,6 +408,10 @@
         .refresh-btn:disabled {
             background: #ccc;
             cursor: not-allowed;
+        }
+
+        #g_id_onload {
+            display: none;
         }
     </style>
 </head>
@@ -460,6 +445,7 @@
             <button class="tab-button" onclick="switchTab('cat-cg')">CAT-CG</button>
         </div>
 
+        <!-- Dashboard Tab -->
         <div id="dashboard" class="tab-content active">
             <div class="dashboard-content">
                 <h2>Key Metrics</h2>
@@ -487,6 +473,7 @@
             </div>
         </div>
 
+        <!-- Ops Weekly Tab -->
         <div id="ops-weekly" class="tab-content">
             <div class="filters">
                 <div class="filter-group">
@@ -532,6 +519,7 @@
             </div>
         </div>
 
+        <!-- CAT-MH Tab -->
         <div id="cat-mh" class="tab-content">
             <div class="filters">
                 <div class="filter-group">
@@ -577,6 +565,7 @@
             </div>
         </div>
 
+        <!-- CAT-CG Tab -->
         <div id="cat-cg" class="tab-content">
             <div class="filters">
                 <div class="filter-group">
@@ -628,11 +617,8 @@
         // CONFIGURATION - UPDATE THESE VALUES
         // ============================================
         const CONFIG = {
-            // Your Google OAuth Client ID (from Google Cloud Console)
+            // Your Google OAuth Client ID
             CLIENT_ID: '395320399110-mdsf4dmin48kv3jo6hr7hlteqpbk58dk.apps.googleusercontent.com',
-            
-            // Your Google Apps Script Web App URL
-            APPS_SCRIPT_URL: 'https://script.google.com/macros/s/AKfycbyuhMxYidDzEx4bBOQyFN5dpgVGDCIkDAHY5J6btAn72ZzznOt8y5BpUIOCHuzfOU0E/exec',
             
             // Your Google Drive File ID of the Excel file
             FILE_ID: '1E-bpqHMrRY99dxd69JFYNIinc536ByO4pA_-A_lXVMI'
@@ -668,9 +654,6 @@
                     width: '200'
                 }
             );
-
-            // Check if user is already signed in
-            google.accounts.id.prompt(console.log);
         };
 
         function handleCredentialResponse(response) {
@@ -707,7 +690,7 @@
         }
 
         // ============================================
-        // DATA FETCHING
+        // DATA FETCHING - Using Google Sheets API
         // ============================================
         async function fetchAllData() {
             if (!authToken) {
@@ -720,43 +703,74 @@
                 document.getElementById('cat-mh-table').innerHTML = '<div class="loading"><div class="loading-spinner"></div><p>Loading CAT-MH...</p></div>';
                 document.getElementById('cat-cg-table').innerHTML = '<div class="loading"><div class="loading-spinner"></div><p>Loading CAT-CG...</p></div>';
 
-                const response = await fetch(CONFIG.APPS_SCRIPT_URL, {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'text/plain' // Changed to bypass CORS preflight OPTIONS check
-                    },
-                    body: JSON.stringify({
-                        action: 'getData',
-                        token: authToken,
-                        fileId: CONFIG.FILE_ID,
-                        sheets: ['Ops Weekly', 'CAT-MH', 'CAT-CG']
-                    })
-                });
+                // Fetch from Google Sheets API
+                const opsWeeklyData = await fetchSheetData('Ops Weekly');
+                const catMhData = await fetchSheetData('CAT-MH');
+                const catCgData = await fetchSheetData('CAT-CG');
 
-                const result = await response.json();
+                allData['ops-weekly'] = opsWeeklyData;
+                allData['cat-mh'] = catMhData;
+                allData['cat-cg'] = catCgData;
+                
+                filteredData = JSON.parse(JSON.stringify(allData));
 
-                if (result.success) {
-                    allData['ops-weekly'] = result.data['Ops Weekly'] || [];
-                    allData['cat-mh'] = result.data['CAT-MH'] || [];
-                    allData['cat-cg'] = result.data['CAT-CG'] || [];
-                    
-                    filteredData = JSON.parse(JSON.stringify(allData));
-
-                    displayOpsWeeklyData(allData['ops-weekly']);
-                    displayCatMHData(allData['cat-mh']);
-                    displayCatCGData(allData['cat-cg']);
-                    
-                    populateFilters();
-                    updateDashboard();
-                } else {
-                    throw new Error(result.error || 'Failed to fetch data');
-                }
+                displayOpsWeeklyData(allData['ops-weekly']);
+                displayCatMHData(allData['cat-mh']);
+                displayCatCGData(allData['cat-cg']);
+                
+                populateFilters();
+                updateDashboard();
             } catch (error) {
                 console.error('Error fetching data:', error);
                 showError('ops-weekly-table', 'Error loading data: ' + error.message);
                 showError('cat-mh-table', 'Error loading data: ' + error.message);
                 showError('cat-cg-table', 'Error loading data: ' + error.message);
             }
+        }
+
+        async function fetchSheetData(sheetName) {
+            const accessToken = authToken;
+            const url = `https://sheets.googleapis.com/v4/spreadsheets/${CONFIG.FILE_ID}/values/${encodeURIComponent(sheetName)}`;
+
+            const response = await fetch(url, {
+                headers: {
+                    'Authorization': `Bearer ${accessToken}`
+                }
+            });
+
+            if (!response.ok) {
+                throw new Error(`Failed to fetch ${sheetName}: ${response.statusText}`);
+            }
+
+            const result = await response.json();
+            const values = result.values || [];
+
+            if (values.length < 2) {
+                return [];
+            }
+
+            // Convert to array of objects
+            const headers = values[0];
+            const data = [];
+
+            for (let i = 1; i < values.length; i++) {
+                const row = values[i];
+                const rowObj = {};
+
+                for (let j = 0; j < headers.length; j++) {
+                    const header = String(headers[j]).trim();
+                    if (header) {
+                        rowObj[header] = row[j] || '';
+                    }
+                }
+
+                const hasData = Object.values(rowObj).some(v => v !== '' && v !== null);
+                if (hasData) {
+                    data.push(rowObj);
+                }
+            }
+
+            return data;
         }
 
         function refreshData() {
@@ -863,21 +877,18 @@
         // FILTER LOGIC
         // ============================================
         function populateFilters() {
-            // Ops Weekly filters
             populateSelectFilter('ops-state-filter', allData['ops-weekly'], 'State');
             populateSelectFilter('ops-pm-filter', allData['ops-weekly'], 'PM');
             populateSelectFilter('ops-district-filter', allData['ops-weekly'], 'District');
             populateSelectFilter('ops-month-filter', allData['ops-weekly'], 'Month');
             populateSelectFilter('ops-week-filter', allData['ops-weekly'], 'Week');
 
-            // CAT-MH filters
             populateSelectFilter('catmh-state-filter', allData['cat-mh'], 'State');
             populateSelectFilter('catmh-district-filter', allData['cat-mh'], 'District');
             populateSelectFilter('catmh-pm-filter', allData['cat-mh'], 'PM');
             populateSelectFilter('catmh-month-filter', allData['cat-mh'], 'Month');
             populateSelectFilter('catmh-status-filter', allData['cat-mh'], 'Status');
 
-            // CAT-CG filters
             populateSelectFilter('catcg-state-filter', allData['cat-cg'], 'State');
             populateSelectFilter('catcg-district-filter', allData['cat-cg'], 'District');
             populateSelectFilter('catcg-pm-filter', allData['cat-cg'], 'PM');
