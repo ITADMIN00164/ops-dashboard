@@ -1,0 +1,1067 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>OPs Weekly Dashboard - Open Links Foundation</title>
+    <script src="https://accounts.google.com/gsi/client" async defer></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .header {
+            background: white;
+            padding: 20px 30px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 20px;
+        }
+
+        .header h1 {
+            color: #333;
+            font-size: 24px;
+        }
+
+        .header-right {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+
+        .user-info {
+            text-align: right;
+            font-size: 13px;
+            color: #666;
+        }
+
+        .user-info .name {
+            font-weight: 600;
+            color: #333;
+        }
+
+        .google-signin-button {
+            padding: 10px 20px;
+            background: #4285F4;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 14px;
+            transition: background 0.3s;
+        }
+
+        .google-signin-button:hover {
+            background: #1f71e7;
+        }
+
+        .logout-btn {
+            padding: 8px 16px;
+            background: #ea4335;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 14px;
+            transition: background 0.3s;
+        }
+
+        .logout-btn:hover {
+            background: #c5221f;
+        }
+
+        .container {
+            background: white;
+            border-radius: 8px;
+            box-shadow: 0 2px 12px rgba(0,0,0,0.15);
+            overflow: hidden;
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+
+        .tabs {
+            display: flex;
+            border-bottom: 2px solid #e0e0e0;
+            background: #f5f5f5;
+        }
+
+        .tab-button {
+            flex: 1;
+            padding: 16px 20px;
+            border: none;
+            background: none;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 500;
+            color: #666;
+            transition: all 0.3s;
+            border-bottom: 3px solid transparent;
+            margin-bottom: -2px;
+        }
+
+        .tab-button:hover {
+            background: #efefef;
+            color: #333;
+        }
+
+        .tab-button.active {
+            color: #667eea;
+            border-bottom-color: #667eea;
+            background: white;
+        }
+
+        .tab-content {
+            display: none;
+            padding: 30px;
+            animation: fadeIn 0.3s;
+        }
+
+        .tab-content.active {
+            display: block;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .filters {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin-bottom: 25px;
+            padding: 20px;
+            background: #f9f9f9;
+            border-radius: 6px;
+        }
+
+        .filter-group {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .filter-group label {
+            font-size: 12px;
+            font-weight: 600;
+            color: #666;
+            margin-bottom: 6px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .filter-group select,
+        .filter-group input {
+            padding: 10px 12px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-size: 13px;
+            transition: border-color 0.3s;
+        }
+
+        .filter-group select:focus,
+        .filter-group input:focus {
+            outline: none;
+            border-color: #667eea;
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+        }
+
+        .filter-buttons {
+            display: flex;
+            gap: 10px;
+            margin-top: 15px;
+            grid-column: 1 / -1;
+        }
+
+        .filter-buttons button {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 13px;
+            font-weight: 600;
+            transition: all 0.3s;
+        }
+
+        .apply-filters {
+            background: #667eea;
+            color: white;
+        }
+
+        .apply-filters:hover {
+            background: #5568d3;
+        }
+
+        .reset-filters {
+            background: #e0e0e0;
+            color: #333;
+        }
+
+        .reset-filters:hover {
+            background: #d0d0d0;
+        }
+
+        .table-wrapper {
+            overflow-x: auto;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 13px;
+        }
+
+        thead {
+            background: #f0f0f0;
+            position: sticky;
+            top: 0;
+        }
+
+        th {
+            padding: 12px 15px;
+            text-align: left;
+            font-weight: 600;
+            color: #333;
+            border-bottom: 2px solid #ddd;
+            word-break: break-word;
+        }
+
+        td {
+            padding: 12px 15px;
+            border-bottom: 1px solid #eee;
+            word-break: break-word;
+        }
+
+        tbody tr:hover {
+            background: #f9f9f9;
+        }
+
+        .status-badge {
+            display: inline-block;
+            padding: 4px 10px;
+            border-radius: 12px;
+            font-size: 11px;
+            font-weight: 600;
+            text-align: center;
+            min-width: 80px;
+        }
+
+        .status-completed {
+            background: #c8e6c9;
+            color: #2e7d32;
+        }
+
+        .status-pending {
+            background: #fff9c4;
+            color: #f57f17;
+        }
+
+        .status-in-process {
+            background: #b3e5fc;
+            color: #01579b;
+        }
+
+        .status-postponed {
+            background: #ffccbc;
+            color: #bf360c;
+        }
+
+        .status-other {
+            background: #e0e0e0;
+            color: #666;
+        }
+
+        .loading {
+            text-align: center;
+            padding: 40px;
+            color: #999;
+        }
+
+        .loading-spinner {
+            border: 3px solid #f3f3f3;
+            border-top: 3px solid #667eea;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 15px;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .error {
+            background: #ffebee;
+            border: 1px solid #ef5350;
+            color: #c62828;
+            padding: 15px;
+            border-radius: 4px;
+            margin: 15px 0;
+        }
+
+        .no-data {
+            text-align: center;
+            padding: 30px;
+            color: #999;
+            font-size: 14px;
+        }
+
+        .dashboard-content {
+            padding: 20px;
+        }
+
+        .dashboard-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 20px;
+            margin-top: 20px;
+        }
+
+        .dashboard-card {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 25px;
+            border-radius: 8px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
+
+        .dashboard-card h3 {
+            font-size: 14px;
+            opacity: 0.9;
+            margin-bottom: 10px;
+            text-transform: uppercase;
+        }
+
+        .dashboard-card .number {
+            font-size: 32px;
+            font-weight: bold;
+        }
+
+        @media (max-width: 768px) {
+            .header {
+                flex-direction: column;
+                align-items: flex-start;
+            }
+
+            .tabs {
+                flex-wrap: wrap;
+            }
+
+            .tab-button {
+                flex: 0 1 50%;
+            }
+
+            .filters {
+                grid-template-columns: 1fr;
+            }
+
+            .filter-buttons {
+                flex-direction: column;
+            }
+
+            .filter-buttons button {
+                width: 100%;
+            }
+
+            table {
+                font-size: 12px;
+            }
+
+            th, td {
+                padding: 8px 10px;
+            }
+        }
+
+        .data-timestamp {
+            font-size: 12px;
+            color: #999;
+            margin-top: 20px;
+            text-align: right;
+        }
+
+        #g_id_onload {
+            display: none;
+        }
+
+        .auth-container {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+
+        .auth-status {
+            font-size: 12px;
+            color: #999;
+        }
+
+        .refresh-btn {
+            padding: 8px 16px;
+            background: #34a853;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 14px;
+            transition: background 0.3s;
+        }
+
+        .refresh-btn:hover {
+            background: #2d8e47;
+        }
+
+        .refresh-btn:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <div>
+            <h1>📊 OPs Weekly Dashboard</h1>
+            <small style="color: #999;">Open Links Foundation</small>
+        </div>
+        <div class="header-right">
+            <div class="auth-container">
+                <div class="auth-status">
+                    <span id="auth-status">Not authenticated</span>
+                </div>
+                <button id="refresh-btn" class="refresh-btn" onclick="refreshData()" disabled>
+                    ↻ Refresh Data
+                </button>
+                <div id="google-signin-container"></div>
+                <button id="logout-btn" class="logout-btn" style="display:none;" onclick="logout()">
+                    Logout
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <div class="container">
+        <div class="tabs">
+            <button class="tab-button active" onclick="switchTab('dashboard')">Dashboard</button>
+            <button class="tab-button" onclick="switchTab('ops-weekly')">Ops Weekly</button>
+            <button class="tab-button" onclick="switchTab('cat-mh')">CAT-MH</button>
+            <button class="tab-button" onclick="switchTab('cat-cg')">CAT-CG</button>
+        </div>
+
+        <!-- Dashboard Tab -->
+        <div id="dashboard" class="tab-content active">
+            <div class="dashboard-content">
+                <h2>Key Metrics</h2>
+                <div class="dashboard-grid">
+                    <div class="dashboard-card">
+                        <h3>Total Action Points</h3>
+                        <div class="number" id="total-actions">-</div>
+                    </div>
+                    <div class="dashboard-card">
+                        <h3>Completed</h3>
+                        <div class="number" id="completed-count">-</div>
+                    </div>
+                    <div class="dashboard-card">
+                        <h3>In Process</h3>
+                        <div class="number" id="inprocess-count">-</div>
+                    </div>
+                    <div class="dashboard-card">
+                        <h3>Pending</h3>
+                        <div class="number" id="pending-count">-</div>
+                    </div>
+                </div>
+                <p style="margin-top: 30px; color: #999; font-size: 13px;">
+                    💡 The dashboard aggregates data from all three tracking sheets. Use the tabs below to view detailed records and apply filters.
+                </p>
+            </div>
+        </div>
+
+        <!-- Ops Weekly Tab -->
+        <div id="ops-weekly" class="tab-content">
+            <div class="filters">
+                <div class="filter-group">
+                    <label>State</label>
+                    <select id="ops-state-filter">
+                        <option value="">All States</option>
+                    </select>
+                </div>
+                <div class="filter-group">
+                    <label>PM</label>
+                    <select id="ops-pm-filter">
+                        <option value="">All PMs</option>
+                    </select>
+                </div>
+                <div class="filter-group">
+                    <label>District</label>
+                    <select id="ops-district-filter">
+                        <option value="">All Districts</option>
+                    </select>
+                </div>
+                <div class="filter-group">
+                    <label>Month</label>
+                    <select id="ops-month-filter">
+                        <option value="">All Months</option>
+                    </select>
+                </div>
+                <div class="filter-group">
+                    <label>Week</label>
+                    <select id="ops-week-filter">
+                        <option value="">All Weeks</option>
+                    </select>
+                </div>
+                <div class="filter-buttons">
+                    <button class="apply-filters" onclick="applyFilters('ops-weekly')">Apply Filters</button>
+                    <button class="reset-filters" onclick="resetFilters('ops-weekly')">Reset</button>
+                </div>
+            </div>
+            <div class="table-wrapper">
+                <div id="ops-weekly-table" class="loading">
+                    <div class="loading-spinner"></div>
+                    <p>Loading data...</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- CAT-MH Tab -->
+        <div id="cat-mh" class="tab-content">
+            <div class="filters">
+                <div class="filter-group">
+                    <label>State</label>
+                    <select id="catmh-state-filter">
+                        <option value="">All States</option>
+                    </select>
+                </div>
+                <div class="filter-group">
+                    <label>District</label>
+                    <select id="catmh-district-filter">
+                        <option value="">All Districts</option>
+                    </select>
+                </div>
+                <div class="filter-group">
+                    <label>PM</label>
+                    <select id="catmh-pm-filter">
+                        <option value="">All PMs</option>
+                    </select>
+                </div>
+                <div class="filter-group">
+                    <label>Month</label>
+                    <select id="catmh-month-filter">
+                        <option value="">All Months</option>
+                    </select>
+                </div>
+                <div class="filter-group">
+                    <label>Status</label>
+                    <select id="catmh-status-filter">
+                        <option value="">All Status</option>
+                    </select>
+                </div>
+                <div class="filter-buttons">
+                    <button class="apply-filters" onclick="applyFilters('cat-mh')">Apply Filters</button>
+                    <button class="reset-filters" onclick="resetFilters('cat-mh')">Reset</button>
+                </div>
+            </div>
+            <div class="table-wrapper">
+                <div id="cat-mh-table" class="loading">
+                    <div class="loading-spinner"></div>
+                    <p>Loading data...</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- CAT-CG Tab -->
+        <div id="cat-cg" class="tab-content">
+            <div class="filters">
+                <div class="filter-group">
+                    <label>State</label>
+                    <select id="catcg-state-filter">
+                        <option value="">All States</option>
+                    </select>
+                </div>
+                <div class="filter-group">
+                    <label>District</label>
+                    <select id="catcg-district-filter">
+                        <option value="">All Districts</option>
+                    </select>
+                </div>
+                <div class="filter-group">
+                    <label>PM</label>
+                    <select id="catcg-pm-filter">
+                        <option value="">All PMs</option>
+                    </select>
+                </div>
+                <div class="filter-group">
+                    <label>Month</label>
+                    <select id="catcg-month-filter">
+                        <option value="">All Months</option>
+                    </select>
+                </div>
+                <div class="filter-group">
+                    <label>Status</label>
+                    <select id="catcg-status-filter">
+                        <option value="">All Status</option>
+                    </select>
+                </div>
+                <div class="filter-buttons">
+                    <button class="apply-filters" onclick="applyFilters('cat-cg')">Apply Filters</button>
+                    <button class="reset-filters" onclick="resetFilters('cat-cg')">Reset</button>
+                </div>
+            </div>
+            <div class="table-wrapper">
+                <div id="cat-cg-table" class="loading">
+                    <div class="loading-spinner"></div>
+                    <p>Loading data...</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // ============================================
+        // CONFIGURATION - UPDATE THESE VALUES
+        // ============================================
+        const CONFIG = {
+            // Your Google OAuth Client ID (from Google Cloud Console)
+            CLIENT_ID: '395320399110-mdsf4dmin48kv3jo6hr7hlteqpbk58dk.apps.googleusercontent.com',
+            
+            // Your Google Apps Script Web App URL
+            APPS_SCRIPT_URL: 'https://script.google.com/a/macros/openlinksfoundation.org/s/AKfycbygQ_1NF2buIdmzNLczAy2MZFTdJeqkNUvc2TRTo0QZp2f3k1ngQvpZ2TEof-aaMA1K/exec',
+            
+            // Your Google Drive File ID of the Excel file
+            FILE_ID: '1E-bpqHMrRY99dxd69JFYNIinc536ByO4pA_-A_lXVMI'
+        };
+
+        // ============================================
+        // GLOBAL STATE
+        // ============================================
+        let authToken = null;
+        let allData = {
+            'ops-weekly': [],
+            'cat-mh': [],
+            'cat-cg': []
+        };
+        let filteredData = { ...allData };
+
+        // ============================================
+        // GOOGLE OAUTH INITIALIZATION
+        // ============================================
+        window.onload = function () {
+            google.accounts.id.initialize({
+                client_id: CONFIG.CLIENT_ID,
+                callback: handleCredentialResponse,
+                ux_mode: 'popup'
+            });
+            
+            google.accounts.id.renderButton(
+                document.getElementById('google-signin-container'),
+                {
+                    theme: 'outline',
+                    size: 'large',
+                    text: 'signin_with',
+                    width: '200'
+                }
+            );
+
+            // Check if user is already signed in
+            google.accounts.id.prompt(console.log);
+        };
+
+        function handleCredentialResponse(response) {
+            authToken = response.credential;
+            updateAuthUI(true);
+            document.getElementById('refresh-btn').disabled = false;
+            fetchAllData();
+        }
+
+        function updateAuthUI(isAuthenticated) {
+            const signinBtn = document.getElementById('google-signin-container');
+            const logoutBtn = document.getElementById('logout-btn');
+            const authStatus = document.getElementById('auth-status');
+
+            if (isAuthenticated) {
+                signinBtn.style.display = 'none';
+                logoutBtn.style.display = 'block';
+                authStatus.textContent = '✓ Authenticated';
+                authStatus.style.color = '#4caf50';
+            } else {
+                signinBtn.style.display = 'block';
+                logoutBtn.style.display = 'none';
+                authStatus.textContent = 'Not authenticated';
+                authStatus.style.color = '#999';
+            }
+        }
+
+        function logout() {
+            google.accounts.id.disableAutoSelect();
+            authToken = null;
+            updateAuthUI(false);
+            document.getElementById('refresh-btn').disabled = true;
+            clearAllTables();
+        }
+
+        // ============================================
+        // DATA FETCHING
+        // ============================================
+        async function fetchAllData() {
+            if (!authToken) {
+                showError('ops-weekly-table', 'Please sign in with your Google account first.');
+                return;
+            }
+
+            try {
+                document.getElementById('ops-weekly-table').innerHTML = '<div class="loading"><div class="loading-spinner"></div><p>Loading Ops Weekly...</p></div>';
+                document.getElementById('cat-mh-table').innerHTML = '<div class="loading"><div class="loading-spinner"></div><p>Loading CAT-MH...</p></div>';
+                document.getElementById('cat-cg-table').innerHTML = '<div class="loading"><div class="loading-spinner"></div><p>Loading CAT-CG...</p></div>';
+
+                const response = await fetch(CONFIG.APPS_SCRIPT_URL, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        action: 'getData',
+                        token: authToken,
+                        fileId: CONFIG.FILE_ID,
+                        sheets: ['Ops Weekly', 'CAT-MH', 'CAT-CG']
+                    })
+                });
+
+                const result = await response.json();
+
+                if (result.success) {
+                    allData['ops-weekly'] = result.data['Ops Weekly'] || [];
+                    allData['cat-mh'] = result.data['CAT-MH'] || [];
+                    allData['cat-cg'] = result.data['CAT-CG'] || [];
+                    
+                    filteredData = JSON.parse(JSON.stringify(allData));
+
+                    displayOpsWeeklyData(allData['ops-weekly']);
+                    displayCatMHData(allData['cat-mh']);
+                    displayCatCGData(allData['cat-cg']);
+                    
+                    populateFilters();
+                    updateDashboard();
+                } else {
+                    throw new Error(result.error || 'Failed to fetch data');
+                }
+            } catch (error) {
+                console.error('Error fetching data:', error);
+                showError('ops-weekly-table', 'Error loading data: ' + error.message);
+                showError('cat-mh-table', 'Error loading data: ' + error.message);
+                showError('cat-cg-table', 'Error loading data: ' + error.message);
+            }
+        }
+
+        function refreshData() {
+            fetchAllData();
+        }
+
+        // ============================================
+        // DATA DISPLAY
+        // ============================================
+        function displayOpsWeeklyData(data) {
+            const container = document.getElementById('ops-weekly-table');
+            
+            if (!data || data.length === 0) {
+                container.innerHTML = '<div class="no-data">No data available</div>';
+                return;
+            }
+
+            let html = '<table><thead><tr>';
+            const headers = Object.keys(data[0]);
+            headers.forEach(header => {
+                html += `<th>${escapeHtml(header)}</th>`;
+            });
+            html += '</tr></thead><tbody>';
+
+            data.forEach(row => {
+                html += '<tr>';
+                headers.forEach(header => {
+                    let value = row[header] || '';
+                    if (header.toLowerCase().includes('status')) {
+                        value = `<span class="status-badge ${getStatusClass(value)}">${escapeHtml(value)}</span>`;
+                    }
+                    html += `<td>${escapeHtml(value)}</td>`;
+                });
+                html += '</tr>';
+            });
+
+            html += '</tbody></table>';
+            container.innerHTML = html;
+        }
+
+        function displayCatMHData(data) {
+            const container = document.getElementById('cat-mh-table');
+            
+            if (!data || data.length === 0) {
+                container.innerHTML = '<div class="no-data">No data available</div>';
+                return;
+            }
+
+            let html = '<table><thead><tr>';
+            const headers = Object.keys(data[0]);
+            headers.forEach(header => {
+                html += `<th>${escapeHtml(header)}</th>`;
+            });
+            html += '</tr></thead><tbody>';
+
+            data.forEach(row => {
+                html += '<tr>';
+                headers.forEach(header => {
+                    let value = row[header] || '';
+                    if (header.toLowerCase().includes('status')) {
+                        value = `<span class="status-badge ${getStatusClass(value)}">${escapeHtml(value)}</span>`;
+                    }
+                    html += `<td>${escapeHtml(value)}</td>`;
+                });
+                html += '</tr>';
+            });
+
+            html += '</tbody></table>';
+            container.innerHTML = html;
+        }
+
+        function displayCatCGData(data) {
+            const container = document.getElementById('cat-cg-table');
+            
+            if (!data || data.length === 0) {
+                container.innerHTML = '<div class="no-data">No data available</div>';
+                return;
+            }
+
+            let html = '<table><thead><tr>';
+            const headers = Object.keys(data[0]);
+            headers.forEach(header => {
+                html += `<th>${escapeHtml(header)}</th>`;
+            });
+            html += '</tr></thead><tbody>';
+
+            data.forEach(row => {
+                html += '<tr>';
+                headers.forEach(header => {
+                    let value = row[header] || '';
+                    if (header.toLowerCase().includes('status')) {
+                        value = `<span class="status-badge ${getStatusClass(value)}">${escapeHtml(value)}</span>`;
+                    }
+                    html += `<td>${escapeHtml(value)}</td>`;
+                });
+                html += '</tr>';
+            });
+
+            html += '</tbody></table>';
+            container.innerHTML = html;
+        }
+
+        // ============================================
+        // FILTER LOGIC
+        // ============================================
+        function populateFilters() {
+            // Ops Weekly filters
+            populateSelectFilter('ops-state-filter', allData['ops-weekly'], 'State');
+            populateSelectFilter('ops-pm-filter', allData['ops-weekly'], 'PM');
+            populateSelectFilter('ops-district-filter', allData['ops-weekly'], 'District');
+            populateSelectFilter('ops-month-filter', allData['ops-weekly'], 'Month');
+            populateSelectFilter('ops-week-filter', allData['ops-weekly'], 'Week');
+
+            // CAT-MH filters
+            populateSelectFilter('catmh-state-filter', allData['cat-mh'], 'State');
+            populateSelectFilter('catmh-district-filter', allData['cat-mh'], 'District');
+            populateSelectFilter('catmh-pm-filter', allData['cat-mh'], 'PM');
+            populateSelectFilter('catmh-month-filter', allData['cat-mh'], 'Month');
+            populateSelectFilter('catmh-status-filter', allData['cat-mh'], 'Status');
+
+            // CAT-CG filters
+            populateSelectFilter('catcg-state-filter', allData['cat-cg'], 'State');
+            populateSelectFilter('catcg-district-filter', allData['cat-cg'], 'District');
+            populateSelectFilter('catcg-pm-filter', allData['cat-cg'], 'PM');
+            populateSelectFilter('catcg-month-filter', allData['cat-cg'], 'Month');
+            populateSelectFilter('catcg-status-filter', allData['cat-cg'], 'Status');
+        }
+
+        function populateSelectFilter(selectId, data, columnName) {
+            const select = document.getElementById(selectId);
+            const values = new Set();
+            
+            data.forEach(row => {
+                if (row[columnName]) {
+                    values.add(String(row[columnName]).trim());
+                }
+            });
+
+            const uniqueValues = Array.from(values).filter(v => v).sort();
+            
+            uniqueValues.forEach(value => {
+                const option = document.createElement('option');
+                option.value = value;
+                option.textContent = value;
+                select.appendChild(option);
+            });
+        }
+
+        function applyFilters(tabType) {
+            if (tabType === 'ops-weekly') {
+                const state = document.getElementById('ops-state-filter').value;
+                const pm = document.getElementById('ops-pm-filter').value;
+                const district = document.getElementById('ops-district-filter').value;
+                const month = document.getElementById('ops-month-filter').value;
+                const week = document.getElementById('ops-week-filter').value;
+
+                filteredData['ops-weekly'] = allData['ops-weekly'].filter(row => {
+                    return (
+                        (!state || String(row['State']).trim() === state) &&
+                        (!pm || String(row['PM']).trim() === pm) &&
+                        (!district || String(row['District']).trim() === district) &&
+                        (!month || String(row['Month']).trim() === month) &&
+                        (!week || String(row['Week']).trim() === week)
+                    );
+                });
+
+                displayOpsWeeklyData(filteredData['ops-weekly']);
+            }
+            else if (tabType === 'cat-mh') {
+                const state = document.getElementById('catmh-state-filter').value;
+                const district = document.getElementById('catmh-district-filter').value;
+                const pm = document.getElementById('catmh-pm-filter').value;
+                const month = document.getElementById('catmh-month-filter').value;
+                const status = document.getElementById('catmh-status-filter').value;
+
+                filteredData['cat-mh'] = allData['cat-mh'].filter(row => {
+                    return (
+                        (!state || String(row['State']).trim() === state) &&
+                        (!district || String(row['District']).trim() === district) &&
+                        (!pm || String(row['PM']).trim() === pm) &&
+                        (!month || String(row['Month']).trim() === month) &&
+                        (!status || String(row['Status']).trim() === status)
+                    );
+                });
+
+                displayCatMHData(filteredData['cat-mh']);
+            }
+            else if (tabType === 'cat-cg') {
+                const state = document.getElementById('catcg-state-filter').value;
+                const district = document.getElementById('catcg-district-filter').value;
+                const pm = document.getElementById('catcg-pm-filter').value;
+                const month = document.getElementById('catcg-month-filter').value;
+                const status = document.getElementById('catcg-status-filter').value;
+
+                filteredData['cat-cg'] = allData['cat-cg'].filter(row => {
+                    return (
+                        (!state || String(row['State']).trim() === state) &&
+                        (!district || String(row['District']).trim() === district) &&
+                        (!pm || String(row['PM']).trim() === pm) &&
+                        (!month || String(row['Month']).trim() === month) &&
+                        (!status || String(row['Status']).trim() === status)
+                    );
+                });
+
+                displayCatCGData(filteredData['cat-cg']);
+            }
+        }
+
+        function resetFilters(tabType) {
+            if (tabType === 'ops-weekly') {
+                document.getElementById('ops-state-filter').value = '';
+                document.getElementById('ops-pm-filter').value = '';
+                document.getElementById('ops-district-filter').value = '';
+                document.getElementById('ops-month-filter').value = '';
+                document.getElementById('ops-week-filter').value = '';
+                displayOpsWeeklyData(allData['ops-weekly']);
+            }
+            else if (tabType === 'cat-mh') {
+                document.getElementById('catmh-state-filter').value = '';
+                document.getElementById('catmh-district-filter').value = '';
+                document.getElementById('catmh-pm-filter').value = '';
+                document.getElementById('catmh-month-filter').value = '';
+                document.getElementById('catmh-status-filter').value = '';
+                displayCatMHData(allData['cat-mh']);
+            }
+            else if (tabType === 'cat-cg') {
+                document.getElementById('catcg-state-filter').value = '';
+                document.getElementById('catcg-district-filter').value = '';
+                document.getElementById('catcg-pm-filter').value = '';
+                document.getElementById('catcg-month-filter').value = '';
+                document.getElementById('catcg-status-filter').value = '';
+                displayCatCGData(allData['cat-cg']);
+            }
+        }
+
+        // ============================================
+        // DASHBOARD
+        // ============================================
+        function updateDashboard() {
+            let totalActions = 0;
+            let completed = 0;
+            let inProcess = 0;
+            let pending = 0;
+
+            [...allData['ops-weekly'], ...allData['cat-mh'], ...allData['cat-cg']].forEach(row => {
+                totalActions++;
+                const status = String(row['Status'] || '').toLowerCase();
+                if (status.includes('completed')) completed++;
+                else if (status.includes('process')) inProcess++;
+                else if (status.includes('pending')) pending++;
+            });
+
+            document.getElementById('total-actions').textContent = totalActions;
+            document.getElementById('completed-count').textContent = completed;
+            document.getElementById('inprocess-count').textContent = inProcess;
+            document.getElementById('pending-count').textContent = pending;
+        }
+
+        // ============================================
+        // TAB SWITCHING
+        // ============================================
+        function switchTab(tabName) {
+            document.querySelectorAll('.tab-content').forEach(tab => tab.classList.remove('active'));
+            document.querySelectorAll('.tab-button').forEach(btn => btn.classList.remove('active'));
+            
+            document.getElementById(tabName).classList.add('active');
+            event.target.classList.add('active');
+        }
+
+        // ============================================
+        // UTILITY FUNCTIONS
+        // ============================================
+        function getStatusClass(status) {
+            const s = String(status).toLowerCase();
+            if (s.includes('completed')) return 'status-completed';
+            if (s.includes('process')) return 'status-in-process';
+            if (s.includes('pending')) return 'status-pending';
+            if (s.includes('postponed')) return 'status-postponed';
+            return 'status-other';
+        }
+
+        function escapeHtml(text) {
+            const map = {
+                '&': '&amp;',
+                '<': '&lt;',
+                '>': '&gt;',
+                '"': '&quot;',
+                "'": '&#039;'
+            };
+            return String(text).replace(/[&<>"']/g, m => map[m]);
+        }
+
+        function showError(elementId, message) {
+            document.getElementById(elementId).innerHTML = `<div class="error">${escapeHtml(message)}</div>`;
+        }
+
+        function clearAllTables() {
+            document.getElementById('ops-weekly-table').innerHTML = '<div class="no-data">Please sign in to view data</div>';
+            document.getElementById('cat-mh-table').innerHTML = '<div class="no-data">Please sign in to view data</div>';
+            document.getElementById('cat-cg-table').innerHTML = '<div class="no-data">Please sign in to view data</div>';
+        }
+    </script>
+</body>
+</html>
