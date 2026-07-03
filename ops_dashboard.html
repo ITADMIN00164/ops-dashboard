@@ -460,7 +460,6 @@
             <button class="tab-button" onclick="switchTab('cat-cg')">CAT-CG</button>
         </div>
 
-        <!-- Dashboard Tab -->
         <div id="dashboard" class="tab-content active">
             <div class="dashboard-content">
                 <h2>Key Metrics</h2>
@@ -488,7 +487,6 @@
             </div>
         </div>
 
-        <!-- Ops Weekly Tab -->
         <div id="ops-weekly" class="tab-content">
             <div class="filters">
                 <div class="filter-group">
@@ -534,7 +532,6 @@
             </div>
         </div>
 
-        <!-- CAT-MH Tab -->
         <div id="cat-mh" class="tab-content">
             <div class="filters">
                 <div class="filter-group">
@@ -580,7 +577,6 @@
             </div>
         </div>
 
-        <!-- CAT-CG Tab -->
         <div id="cat-cg" class="tab-content">
             <div class="filters">
                 <div class="filter-group">
@@ -727,7 +723,7 @@
                 const response = await fetch(CONFIG.APPS_SCRIPT_URL, {
                     method: 'POST',
                     headers: {
-                        'Content-Type': 'text/plain'
+                        'Content-Type': 'text/plain' // Changed to bypass CORS preflight OPTIONS check
                     },
                     body: JSON.stringify({
                         action: 'getData',
