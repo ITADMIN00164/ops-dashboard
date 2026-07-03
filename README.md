@@ -1,1 +1,1 @@
-this Ops weekly call Action pooint Dashboard
+Ops weekly Action points Dashboard
