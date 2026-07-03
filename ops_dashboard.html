@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>OPs Weekly Dashboard - Open Links Foundation</title>
+    <script src="https://apis.google.com/js/api.js"></script>
     <script src="https://accounts.google.com/gsi/client" async defer></script>
     <style>
         * {
@@ -148,8 +149,7 @@
             letter-spacing: 0.5px;
         }
 
-        .filter-group select,
-        .filter-group input {
+        .filter-group select {
             padding: 10px 12px;
             border: 1px solid #ddd;
             border-radius: 4px;
@@ -157,8 +157,7 @@
             transition: border-color 0.3s;
         }
 
-        .filter-group select:focus,
-        .filter-group input:focus {
+        .filter-group select:focus {
             outline: none;
             border-color: #667eea;
             box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
@@ -372,13 +371,6 @@
             }
         }
 
-        .data-timestamp {
-            font-size: 12px;
-            color: #999;
-            margin-top: 20px;
-            text-align: right;
-        }
-
         .auth-container {
             display: flex;
             align-items: center;
@@ -467,9 +459,6 @@
                         <div class="number" id="pending-count">-</div>
                     </div>
                 </div>
-                <p style="margin-top: 30px; color: #999; font-size: 13px;">
-                    💡 The dashboard aggregates data from all three tracking sheets. Use the tabs below to view detailed records and apply filters.
-                </p>
             </div>
         </div>
 
@@ -617,17 +606,16 @@
         // CONFIGURATION - UPDATE THESE VALUES
         // ============================================
         const CONFIG = {
-            // Your Google OAuth Client ID
             CLIENT_ID: '395320399110-mdsf4dmin48kv3jo6hr7hlteqpbk58dk.apps.googleusercontent.com',
-            
-            // Your Google Drive File ID of the Excel file
             FILE_ID: '1E-bpqHMrRY99dxd69JFYNIinc536ByO4pA_-A_lXVMI'
         };
+
+        const SCOPES = 'https://www.googleapis.com/auth/spreadsheets.readonly';
 
         // ============================================
         // GLOBAL STATE
         // ============================================
-        let authToken = null;
+        let accessToken = null;
         let allData = {
             'ops-weekly': [],
             'cat-mh': [],
@@ -636,15 +624,17 @@
         let filteredData = { ...allData };
 
         // ============================================
-        // GOOGLE OAUTH INITIALIZATION
+        // INITIALIZATION
         // ============================================
         window.onload = function () {
+            gapi.load('client:auth2', initClient);
+            
             google.accounts.id.initialize({
                 client_id: CONFIG.CLIENT_ID,
                 callback: handleCredentialResponse,
                 ux_mode: 'popup'
             });
-            
+
             google.accounts.id.renderButton(
                 document.getElementById('google-signin-container'),
                 {
@@ -656,19 +646,81 @@
             );
         };
 
-        function handleCredentialResponse(response) {
-            authToken = response.credential;
-            updateAuthUI(true);
-            document.getElementById('refresh-btn').disabled = false;
-            fetchAllData();
+        function initClient() {
+            gapi.client.init({
+                clientId: CONFIG.CLIENT_ID,
+                scope: SCOPES,
+                discoveryDocs: ['https://sheets.googleapis.com/$discovery/rest?version=v4']
+            }).then(function() {
+                console.log('Gapi client initialized');
+            }).catch(function(error) {
+                console.error('Error initializing gapi client:', error);
+            });
         }
+
+        function handleCredentialResponse(response) {
+            // Decode JWT to get user info
+            const credentials = jwt_decode(response.credential);
+            console.log('User authenticated:', credentials.email);
+            
+            // Now request access token for Sheets API
+            requestAccessToken();
+        }
+
+        function requestAccessToken() {
+            const oauth2Endpoint = 'https://accounts.google.com/o/oauth2/v2/auth';
+            const form = document.createElement('form');
+            form.setAttribute('method', 'GET');
+            form.setAttribute('action', oauth2Endpoint);
+
+            const params = {
+                'client_id': CONFIG.CLIENT_ID,
+                'redirect_uri': window.location.href,
+                'response_type': 'token',
+                'scope': SCOPES,
+                'prompt': 'consent'
+            };
+
+            for (const p in params) {
+                const input = document.createElement('input');
+                input.setAttribute('type', 'hidden');
+                input.setAttribute('name', p);
+                input.setAttribute('value', params[p]);
+                form.appendChild(input);
+            }
+
+            document.body.appendChild(form);
+            form.submit();
+        }
+
+        // Handle OAuth redirect
+        function handleOAuthCallback() {
+            const hash = window.location.hash;
+            if (hash) {
+                const params = new URLSearchParams(hash.substring(1));
+                accessToken = params.get('access_token');
+                
+                if (accessToken) {
+                    updateAuthUI(true);
+                    document.getElementById('refresh-btn').disabled = false;
+                    fetchAllData();
+                    // Clean up URL
+                    window.history.replaceState({}, document.title, window.location.pathname);
+                }
+            }
+        }
+
+        // Check for token on page load
+        window.addEventListener('load', function() {
+            handleOAuthCallback();
+        });
 
         function updateAuthUI(isAuthenticated) {
             const signinBtn = document.getElementById('google-signin-container');
             const logoutBtn = document.getElementById('logout-btn');
             const authStatus = document.getElementById('auth-status');
 
-            if (isAuthenticated) {
+            if (isAuthenticated && accessToken) {
                 signinBtn.style.display = 'none';
                 logoutBtn.style.display = 'block';
                 authStatus.textContent = '✓ Authenticated';
@@ -682,18 +734,27 @@
         }
 
         function logout() {
-            google.accounts.id.disableAutoSelect();
-            authToken = null;
+            accessToken = null;
             updateAuthUI(false);
             document.getElementById('refresh-btn').disabled = true;
             clearAllTables();
         }
 
+        // JWT Decode helper
+        function jwt_decode(token) {
+            const base64Url = token.split('.')[1];
+            const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
+            const jsonPayload = decodeURIComponent(atob(base64).split('').map(function(c) {
+                return '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2);
+            }).join(''));
+            return JSON.parse(jsonPayload);
+        }
+
         // ============================================
-        // DATA FETCHING - Using Google Sheets API
+        // DATA FETCHING
         // ============================================
         async function fetchAllData() {
-            if (!authToken) {
+            if (!accessToken) {
                 showError('ops-weekly-table', 'Please sign in with your Google account first.');
                 return;
             }
@@ -703,7 +764,6 @@
                 document.getElementById('cat-mh-table').innerHTML = '<div class="loading"><div class="loading-spinner"></div><p>Loading CAT-MH...</p></div>';
                 document.getElementById('cat-cg-table').innerHTML = '<div class="loading"><div class="loading-spinner"></div><p>Loading CAT-CG...</p></div>';
 
-                // Fetch from Google Sheets API
                 const opsWeeklyData = await fetchSheetData('Ops Weekly');
                 const catMhData = await fetchSheetData('CAT-MH');
                 const catCgData = await fetchSheetData('CAT-CG');
@@ -729,7 +789,6 @@
         }
 
         async function fetchSheetData(sheetName) {
-            const accessToken = authToken;
             const url = `https://sheets.googleapis.com/v4/spreadsheets/${CONFIG.FILE_ID}/values/${encodeURIComponent(sheetName)}`;
 
             const response = await fetch(url, {
@@ -749,7 +808,6 @@
                 return [];
             }
 
-            // Convert to array of objects
             const headers = values[0];
             const data = [];
 
